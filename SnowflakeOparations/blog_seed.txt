@@ -1,0 +1,54 @@
+def get_columns_info(connection, database: str, schema: str, table_name: str) -> pd.DataFrame:
+    """
+    指定されたテーブルのカラム情報を取得
+    
+    Parameters:
+    -----------
+    connection : snowflake.connector.connection
+        Snowflake接続オブジェクト
+    database : str
+        データベース名
+    schema : str
+        スキーマ名
+    table_name : str
+        テーブル名
+        
+    Returns:
+    --------
+    pd.DataFrame
+        カラム情報のDataFrame
+    """
+    query = f"""
+    SELECT 
+        COLUMN_NAME,
+        DATA_TYPE,
+        IS_NULLABLE,
+        COLUMN_DEFAULT,
+        CHARACTER_MAXIMUM_LENGTH,
+        NUMERIC_PRECISION,
+        NUMERIC_SCALE
+    FROM {database}.INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = '{schema}'
+    AND TABLE_NAME = '{table_name}'
+    ORDER BY ORDINAL_POSITION
+    """
+    
+    cursor = connection.cursor()
+    cursor.execute(query)
+    columns = cursor.fetchall()
+    cursor.close()
+    
+    df = pd.DataFrame(columns, columns=[
+        'COLUMN_NAME', 'DATA_TYPE', 'IS_NULLABLE', 
+        'COLUMN_DEFAULT', 'CHAR_MAX_LENGTH', 
+        'NUMERIC_PRECISION', 'NUMERIC_SCALE'
+    ])
+    
+    return df
+
+# 例: 最初のテーブルのカラム情報を取得(テーブルが存在する場合)
+if tables:
+    example_table = tables[0]
+    columns_info = get_columns_info(conn, config['database'], config['schema'], example_table)
+    print(f"\nテーブル '{example_table}' のカラム情報:")
+    display(columns_info)
